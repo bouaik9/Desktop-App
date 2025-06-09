@@ -1,3 +1,0 @@
-Tkinter
-numpy
-matplotlib

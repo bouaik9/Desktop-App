@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def draw_graph_from_matrix(matrix_str, edges=None, path_color='red', colors=None):
+def graph_coloring_draw(matrix_str, colors=None):
     """
     Draws a graph from an adjacency matrix string using NetworkX and Matplotlib,
     and embeds it in a Tkinter window. Optionally colors a specified path and nodes.
@@ -21,10 +21,10 @@ def draw_graph_from_matrix(matrix_str, edges=None, path_color='red', colors=None
         num_nodes = len(matrix)
         graph.add_nodes_from(range(num_nodes))
 
-        for i in edges:
-            graph.add_edge(i[0], i[1], weight=i[2])  # Add edges for the path
-
-    
+        for i in range(num_nodes):
+            for j in range(i, num_nodes):  # Add edges only once for undirected
+                if matrix[i][j] != 0:
+                    graph.add_edge(i, j, weight=matrix[i][j])
 
         window = tk.Tk()
         window.title("Graph from Adjacency Matrix")
@@ -32,8 +32,6 @@ def draw_graph_from_matrix(matrix_str, edges=None, path_color='red', colors=None
         figure, ax = plt.subplots(figsize=(8, 6))
         ax.set_facecolor("#23272e")
 
-        # Edge colors, color path edges differently if edges list provided
-  
 
         # Node colors - from dictionary or default color
         if colors:
@@ -45,7 +43,7 @@ def draw_graph_from_matrix(matrix_str, edges=None, path_color='red', colors=None
         pos = nx.spring_layout(graph)
         nx.draw(graph, pos, ax=ax, with_labels=True, node_color=node_colors,
                 node_size=800, font_size=12, font_color="white",
-                font_weight="bold", edge_color="red")
+                font_weight="bold", edge_color="black")
 
         edge_labels = nx.get_edge_attributes(graph, 'weight')
         nx.draw_networkx_edge_labels(graph, pos, ax=ax, edge_labels=edge_labels,
@@ -65,15 +63,3 @@ def draw_graph_from_matrix(matrix_str, edges=None, path_color='red', colors=None
         tk.messagebox.showerror("Error", str(e))
 
 
-if __name__ == '__main__':
-    adjacency_matrix_str = [
-        [0, 2, 4, 0],
-        [2, 0, 1, 0],
-        [4, 1, 0, 7],
-        [0, 0, 7, 0]
-    ]
-
-    path = [(0, 1), (1, 2), (2, 3)]
-    node_colors = {0: 'red', 1: 'green', 2: 'blue', 3: 'yellow'}  # color dict by node
-
-    draw_graph_from_matrix(adjacency_matrix_str, edges=path, path_color='red', colors=node_colors)

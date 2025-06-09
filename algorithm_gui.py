@@ -1,35 +1,39 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, font
 import threading
-
+from collections import deque
+import numpy as np
+import numpy as np
+import numpy as np
+from graph_coloring_draw import graph_coloring_draw
 from graph_from_matrix import draw_graph_from_matrix
 
 # Algorithm metadata
 ALGORITHMS = {
-    "Linear Programming": {
-        "LP: Revised Simplex Method": {
+    "Programmation Linéaire": {
+        "LP: Méthode du Simplex Révisée": {
             "description": "An efficient version of the simplex method for solving linear programming problems.",
             "input_type": "matrix"
         },
-        "LP: Simplex Algorithm": {
+        "LP: Algorithme de Simplex": {
             "description": "A popular algorithm for linear programming problems.",
             "input_type": "matrix"
         },
-        "LP: Two-Phase Method": {
+        "LP: Méthode en Deux Phases": {
             "description": "Solves linear programming problems with artificial variables.",
             "input_type": "matrix"
         }
     },
-    "Graph Theory": {
+    "Théorie des Graphes": {
         "Depth-First Search (DFS)": {
             "description": "A graph traversal algorithm that explores as far as possible along each branch before backtracking.",
             "input_type": "adjacency"
         },
-        "Bellman’s Algorithm": {
+        "Algorithme de Bellman": {
             "description": "Finds shortest paths from a single source vertex to all other vertices in a weighted digraph.",
             "input_type": "adjacency"
         },
-        "Prim’s Algorithm": {
+        "Algorithme de Prim": {
             "description": "Finds a minimum spanning tree for a weighted undirected graph.",
             "input_type": "adjacency"
         },
@@ -37,23 +41,23 @@ ALGORITHMS = {
             "description": "A graph traversal algorithm that explores all neighbors at the present depth before moving on.",
             "input_type": "adjacency"
         },
-        "Dijkstra’s Algorithm": {
+        "Algorithme de Dijkstra": {
             "description": "Finds the shortest path between nodes in a graph.",
             "input_type": "adjacency"
         },
-        "Kruskal’s Algorithm": {
+        "Algorithme de Kruskal": {
             "description": "Finds a minimum spanning tree for a connected weighted graph.",
             "input_type": "adjacency"
         },
-        "Graph Coloring": {
+        "Coloration de Graphes": {
             "description": "Assigns colors to graph vertices so that no two adjacent vertices share the same color.",
             "input_type": "adjacency"
         },
-        "Bellman-Ford Algorithm": {
+        "Algorithme de Bellman-Ford": {
             "description": "Computes shortest paths from a single source vertex to all other vertices in a weighted digraph.",
             "input_type": "adjacency"
         },
-        "Ford-Fulkerson Algorithm": {
+        "Algorithme de Ford-Fulkerson": {
             "description": "Computes the maximum flow in a flow network.",
             "input_type": "adjacency"
         }
@@ -113,15 +117,235 @@ def parse_graph_edges(text):
 # For demonstration, these are simplified and only handle maximization problems in standard form.
 
 def simplex_algorithm(matrix):
-    # matrix: [A|b|c] where last row is objective coefficients, last column is b
-    # This is a stub for demonstration; a full simplex implementation is complex.
-    return "Simplex Algorithm: [Demo] Solution not implemented."
+    """
+    Naive simplex implementation for maximization problems in standard form.
+    Assumes matrix is [A|b] with last row as objective coefficients, last column as b.
+
+    Example input matrix:
+    [
+        [1, 1, 1, 40],
+        [2, 1, 0, 60],
+        [0, 1, 1, 50],
+        [3, 2, 1, 0]
+    ]
+    (Last row is the objective coefficients, last column is the RHS.)
+    """
+
+    mat = np.array(matrix, dtype=float)
+    m, n = mat.shape
+    num_vars = n - 1
+    num_constraints = m - 1
+
+    # Split into A, b, c
+    A = mat[:-1, :-1]
+    b = mat[:-1, -1]
+    c = mat[-1, :-1]
+    tableau = np.zeros((m, n))
+    tableau[:-1, :] = mat[:-1, :]
+    tableau[-1, :-1] = -c
+    tableau[-1, -1] = 0
+
+    basis = list(range(num_vars - num_constraints, num_vars))
+
+    def pivot(tableau, row, col):
+        tableau[row, :] /= tableau[row, col]
+        for r in range(tableau.shape[0]):
+            if r != row:
+                tableau[r, :] -= tableau[r, col] * tableau[row, :]
+
+    while True:
+        # Bland's rule: choose smallest index with negative cost
+        col = next((j for j in range(n - 1) if tableau[-1, j] < -1e-8), None)
+        if col is None:
+            break  # optimal
+        # Minimum ratio test
+        ratios = []
+        for i in range(m - 1):
+            if tableau[i, col] > 1e-8:
+                ratios.append((tableau[i, -1] / tableau[i, col], i))
+        if not ratios:
+            return "Unbounded solution."
+        _, row = min(ratios)
+        pivot(tableau, row, col)
+        basis[row] = col
+
+    solution = np.zeros(n - 1)
+    for i, bi in enumerate(basis):
+        solution[bi] = tableau[i, -1]
+    obj = tableau[-1, -1]
+    return f"Solution optimale : x = {solution.tolist()}\nValeur de la fonction objectif : {obj}"
 
 def revised_simplex_method(matrix):
-    return "Revised Simplex Method: [Demo] Solution not implemented."
+    """
+    Simplified revised simplex for maximization in standard form.
+
+    Example input matrix:
+    [
+        [1, 1, 1, 40],
+        [2, 1, 0, 60],
+        [0, 1, 1, 50],
+        [3, 2, 1, 0]
+    ]
+    (Last row is the objective coefficients, last column is the RHS.)
+    """
+
+    mat = np.array(matrix, dtype=float)
+    m, n = mat.shape
+    num_vars = n - 1
+    num_constraints = m - 1
+
+    A = mat[:-1, :-1]
+    b = mat[:-1, -1]
+    c = mat[-1, :-1]
+
+    # Initial basis: last num_constraints variables (assume slack variables)
+    basis = list(range(num_vars - num_constraints, num_vars))
+    N = [j for j in range(num_vars) if j not in basis]
+
+    B = A[:, basis]
+    xB = np.linalg.solve(B, b)
+    iter_count = 0
+    while True:
+        iter_count += 1
+        B = A[:, basis]
+        cB = c[basis]
+        try:
+            y = np.linalg.solve(B.T, cB)
+        except np.linalg.LinAlgError:
+            return "Numerical issue: singular basis."
+        reduced_costs = []
+        for j in N:
+            aj = A[:, j]
+            rc = c[j] - y @ aj
+            reduced_costs.append((rc, j))
+        entering = next(((rc, j) for rc, j in reduced_costs if rc > 1e-8), None)
+        if not entering:
+            # Optimal
+            x = np.zeros(num_vars)
+            x[basis] = xB
+            obj = c @ x
+            return f"Solution optimale : x = {x.tolist()}\nValeur de la fonction objectif : {obj}\nItérations : {iter_count}"
+        _, j = max(reduced_costs, key=lambda x: x[0])
+        d = np.linalg.solve(B, A[:, j])
+        if all(d <= 1e-8):
+            return "Unbounded solution."
+        ratios = [(xB[i] / d[i], i) for i in range(len(d)) if d[i] > 1e-8]
+        theta, leaving_idx = min(ratios)
+        basis[leaving_idx] = j
+        N = [k for k in range(num_vars) if k not in basis]
+        xB = xB - theta * d
+        xB[leaving_idx] = theta
 
 def two_phase_method(matrix):
-    return "Two-Phase Method: [Demo] Solution not implemented."
+    """
+    Two-phase simplex for maximization in standard form.
+
+    Example input matrix:
+    [
+        [1, 1, 1, 40],
+        [2, 1, 0, 60],
+        [0, 1, 1, 50],
+        [3, 2, 1, 0]
+    ]
+    (Last row is the objective coefficients, last column is the RHS.)
+    """
+
+    mat = np.array(matrix, dtype=float)
+    m, n = mat.shape
+    num_vars = n - 1
+    num_constraints = m - 1
+
+    A = mat[:-1, :-1]
+    b = mat[:-1, -1]
+    c = mat[-1, :-1]
+
+    # Phase 1: add artificial variables for constraints with b < 0
+    A1 = np.copy(A)
+    b1 = np.copy(b)
+    art_vars = []
+    for i in range(len(b1)):
+        if b1[i] < 0:
+            A1[i, :] *= -1
+            b1[i] *= -1
+        art = np.zeros((len(b1), 1))
+        art[i, 0] = 1
+        A1 = np.hstack([A1, art])
+        art_vars.append(A1.shape[1] - 1)
+    c1 = np.zeros(A1.shape[1])
+    for idx in art_vars:
+        c1[idx] = 1
+
+    # Solve phase 1
+    tableau = np.zeros((len(b1) + 1, A1.shape[1] + 1))
+    tableau[:-1, :-1] = A1
+    tableau[:-1, -1] = b1
+    tableau[-1, :-1] = c1
+    tableau[-1, -1] = 0
+
+    basis = art_vars.copy()
+    def pivot(tableau, row, col):
+        tableau[row, :] /= tableau[row, col]
+        for r in range(tableau.shape[0]):
+            if r != row:
+                tableau[r, :] -= tableau[r, col] * tableau[row, :]
+
+    # Phase 1 simplex
+    while True:
+        col = next((j for j in range(tableau.shape[1] - 1) if tableau[-1, j] > 1e-8), None)
+        if col is None:
+            break
+        ratios = []
+        for i in range(len(b1)):
+            if tableau[i, col] > 1e-8:
+                ratios.append((tableau[i, -1] / tableau[i, col], i))
+        if not ratios:
+            return "Infeasible problem."
+        _, row = min(ratios)
+        pivot(tableau, row, col)
+        basis[row] = col
+
+    if abs(tableau[-1, -1]) > 1e-8:
+        return "Infeasible problem (artificial variables remain)."
+
+    # Remove artificial variables, proceed to phase 2
+    keep_cols = [j for j in range(A1.shape[1]) if j not in art_vars]
+    A2 = A1[:, keep_cols]
+    tableau2 = np.zeros((len(b1) + 1, len(keep_cols) + 1))
+    tableau2[:-1, :-1] = A2
+    tableau2[:-1, -1] = b1
+    tableau2[-1, :-1] = -c
+    tableau2[-1, -1] = 0
+
+    # Find new basis indices
+    basis = []
+    for i in range(len(b1)):
+        row = tableau2[i, :-1]
+        idx = np.where(np.abs(row - 1) < 1e-8)[0]
+        if len(idx) == 1 and np.all(np.abs(np.delete(row, idx[0])) < 1e-8):
+            basis.append(idx[0])
+        else:
+            basis.append(0)  # fallback
+
+    # Phase 2 simplex
+    while True:
+        col = next((j for j in range(tableau2.shape[1] - 1) if tableau2[-1, j] < -1e-8), None)
+        if col is None:
+            break
+        ratios = []
+        for i in range(len(b1)):
+            if tableau2[i, col] > 1e-8:
+                ratios.append((tableau2[i, -1] / tableau2[i, col], i))
+        if not ratios:
+            return "Unbounded solution."
+        _, row = min(ratios)
+        pivot(tableau2, row, col)
+        basis[row] = col
+
+    solution = np.zeros(len(keep_cols))
+    for i, bi in enumerate(basis):
+        solution[bi] = tableau2[i, -1]
+    obj = tableau2[-1, -1]
+    return f"Solution optimale : x = {solution.tolist()}\nValeur de la fonction objectif : {obj}"
 
 # --- Graph Algorithms ---
 
@@ -208,7 +432,7 @@ def prim(adj):
                         min_w = adj[i][j]
                         u, v = i, j
         if u != -1 and v != -1:
-            edges.append((int(u), int(v)))
+            edges.append((int(u), int(v), adj[u][v]))
             total += adj[u][v]
             selected[v] = True
 
@@ -244,6 +468,7 @@ def kruskal(adj):
     return f"Kruskal MST edges: {[(u, v, adj[u][v]) for u, v in mst]}\nTotal weight: {total}"
 
 import threading
+import webbrowser
 
 def graph_coloring(adj):
     color_names = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'cyan']
@@ -266,15 +491,15 @@ def graph_coloring(adj):
 
     # Run draw_graph_from_matrix in a separate thread
     def draw():
-        draw_graph_from_matrix(adj, colors=node_colors)
+        graph_coloring_draw(adj, colors=node_colors)
 
     threading.Thread(target=draw, daemon=True).start()
 
-    return f"Vertex colors: {node_colors}\nNumber of colors used: {max(result)+1}"
+    return f"Nombre de couleurs utilisées : {max(result)+1}"
 
 
 def ford_fulkerson(adj, source=0, sink=None):
-    from collections import deque
+    
     n = len(adj)
     if sink is None:
         sink = n - 1
@@ -345,12 +570,12 @@ class DomainSelectionView(tk.Frame):
         self.controller = controller
 
         title_font = font.Font(family="Segoe UI", size=22, weight="bold")
-        label = tk.Label(self, text="Choose a Domain", font=title_font,
+        label = tk.Label(self, font=title_font,
                          bg=BG_COLOR, fg=ACCENT_COLOR, pady=20)
         label.pack()
 
         button_frame = tk.Frame(self, bg=BG_COLOR)
-        button_frame.pack(pady=10)
+        button_frame.pack(pady=180)
 
         btn_font = font.Font(family="Segoe UI", size=12)
         for domain in ALGORITHMS:
@@ -377,7 +602,7 @@ class AlgorithmSelectionView(tk.Frame):
         self.domain = domain
 
         title_font = font.Font(family="Segoe UI", size=18, weight="bold")
-        label = tk.Label(self, text=f"Choose an Algorithm ({domain})", font=title_font,
+        label = tk.Label(self, text=domain, font=title_font,
                          bg=BG_COLOR, fg=ACCENT_COLOR, pady=16)
         label.pack()
 
@@ -403,7 +628,7 @@ class AlgorithmSelectionView(tk.Frame):
             btn.pack(fill="x", pady=4, padx=20)
 
         back_btn = tk.Button(
-            self, text="Back to Domains",
+            self, text="précédent",
             font=("Segoe UI", 11),
             bg=BUTTON_BG, fg=BUTTON_FG,
             activebackground=ACCENT_COLOR, activeforeground=FG_COLOR,
@@ -431,7 +656,7 @@ class AlgorithmInputView(tk.Frame):
         label.pack()
 
         # Input area
-        input_label = tk.Label(self, text="Enter input data below:",
+        input_label = tk.Label(self, text="Saisissez les données d'entrée",
                                font=("Segoe UI", 12), bg=BG_COLOR, fg=FG_COLOR)
         input_label.pack(anchor="w", padx=32)
 
@@ -444,15 +669,15 @@ class AlgorithmInputView(tk.Frame):
 
         # Additional fields for certain algorithms
         algo = self.algorithm_name
-        if algo in ["Dijkstra’s Algorithm", "Bellman-Ford Algorithm", "Bellman’s Algorithm"]:
+        if algo in ["Algorithme de Dijkstra", "Algorithme de Bellman-Ford", "Algorithme de Bellman"]:
             # Start node input
             start_frame = tk.Frame(self, bg=BG_COLOR)
             start_frame.pack(anchor="w", padx=32, pady=(0, 8))
-            tk.Label(start_frame, text="Start node:", font=("Segoe UI", 11), bg=BG_COLOR, fg=FG_COLOR).pack(side="left")
+            tk.Label(start_frame, text="Noeud de départ:", font=("Segoe UI", 11), bg=BG_COLOR, fg=FG_COLOR).pack(side="left")
             self.extra_inputs['start'] = tk.Entry(start_frame, width=5, font=("Consolas", 12), bg=ENTRY_BG, fg=ENTRY_FG, insertbackground=FG_COLOR)
             self.extra_inputs['start'].pack(side="left", padx=(8, 0))
             self.extra_inputs['start'].insert(0, "0")
-        elif algo == "Ford-Fulkerson Algorithm":
+        elif algo == "Algorithme de Ford-Fulkerson":
             # Source and sink input
             ss_frame = tk.Frame(self, bg=BG_COLOR)
             ss_frame.pack(anchor="w", padx=32, pady=(0, 8))
@@ -464,14 +689,14 @@ class AlgorithmInputView(tk.Frame):
             self.extra_inputs['sink'] = tk.Entry(ss_frame, width=5, font=("Consolas", 12), bg=ENTRY_BG, fg=ENTRY_FG, insertbackground=FG_COLOR)
             self.extra_inputs['sink'].pack(side="left", padx=(8, 0))
             self.extra_inputs['sink'].insert(0, "1")
-        elif algo in ["LP: Simplex Algorithm", "LP: Revised Simplex Method", "LP: Two-Phase Method"]:
+        elif algo in ["LP: Algorithme de Simplex", "LP: Méthode du Simplex Révisée", "LP: Méthode en Deux Phases"]:
             # Show a hint for matrix input
             hint = (
-                "Matrix input format:\n"
-                "Each row = constraint or objective, values separated by space/comma.\n"
-                "Last row = objective coefficients.\n"
-                "Last column = right-hand side (b).\n"
-                "Example:\n"
+                "Format d'entrée de la matrice :\n"
+                "Chaque ligne = contrainte ou objectif, valeurs séparées par un espace ou une virgule.\n"
+                "Dernière ligne = coefficients de l'objectif.\n"
+                "Dernière colonne = membre de droite (b).\n"
+                "Exemple :\n"
                 "1 1 1 40\n"
                 "2 1 0 60\n"
                 "0 1 1 50\n"
@@ -505,7 +730,7 @@ class AlgorithmInputView(tk.Frame):
         submit_btn.grid(row=0, column=1, padx=8)
 
         back_btn = tk.Button(
-            btn_frame, text="Back",
+            btn_frame, text="précédent",
             font=("Segoe UI", 11),
             bg=BUTTON_BG, fg=BUTTON_FG,
             activebackground=ACCENT_COLOR, activeforeground=FG_COLOR,
@@ -520,8 +745,26 @@ class AlgorithmInputView(tk.Frame):
         self.result_label.pack()
 
     def show_documentation(self):
-        desc = ALGORITHMS[self.domain][self.algorithm_name]["description"]
-        messagebox.showinfo(f"{self.algorithm_name} - Documentation", desc)
+        # Mapping of algorithms to documentation URLs
+        doc_links = {
+            "LP: Méthode du Simplex Révisée": "https://pageperso.lis-lab.fr/christophe.gonzales/teaching/optimisation/cours/cours04.pdf",
+            "LP: Algorithme de Simplex": "https://youtu.be/i8vnEZi3e4A?si=tCHFjZVCbnGGtb1l",
+            "LP: Méthode en Deux Phases": "https://youtu.be/_wnqe5_CLU0?si=Cq96OVW1Sokjtvu2",
+            "Depth-First Search (DFS)": "https://youtu.be/pcKY4hjDrxk?si=x26RxQWB-f3Ly_qJ",
+            "Algorithme de Bellman": "https://youtu.be/obWXjtg0L64?si=6jN-p6V-iXna_-lC",
+            "Algorithme de Prim": "https://youtu.be/4ZlRH0eK-qQ?si=Cm0zVd_c0CYYMNAZ",
+            "Breadth-First Search (BFS)": "https://youtu.be/pcKY4hjDrxk?si=RXoqBUh0_CzCgTVC",
+            "Algorithme de Dijkstra": "https://fr.wikipedia.org/wiki/Algorithme_de_Dijkstra",
+            "Algorithme de Kruskal": "https://youtu.be/4ZlRH0eK-qQ?si=Cm0zVd_c0CYYMNAZ",
+            "Coloration de Graphes": "https://youtu.be/3VeQhNF5-rE?si=BVDFIBQa531FUXrp",
+            "Algorithme de Bellman-Ford": "https://youtu.be/obWXjtg0L64?si=6jN-p6V-iXna_-lC",
+            "Algorithme de Ford-Fulkerson": "https://youtu.be/Tl90tNtKvxs?si=8ELb0K0exRQ1KNfZ",
+        }
+        url = doc_links.get(self.algorithm_name)
+        if url:
+            webbrowser.open(url)
+        else:
+            messagebox.showinfo("Documentation", "Aucune documentation en ligne disponible pour cet algorithme.")
 
     def process_input(self):
         user_input = self.input_text.get("1.0", tk.END).strip()
@@ -538,11 +781,11 @@ class AlgorithmInputView(tk.Frame):
         try:
             if input_type == "matrix":
                 matrix = parse_matrix_input(user_input)
-                if self.algorithm_name == "LP: Simplex Algorithm":
+                if self.algorithm_name == "LP: Algorithme de Simplex":
                     result = simplex_algorithm(matrix)
-                elif self.algorithm_name == "LP: Revised Simplex Method":
+                elif self.algorithm_name == "LP: Méthode du Simplex Révisée":
                     result = revised_simplex_method(matrix)
-                elif self.algorithm_name == "LP: Two-Phase Method":
+                elif self.algorithm_name == "LP: Méthode en Deux Phases":
                     result = two_phase_method(matrix)
                 else:
                     result = "Unknown matrix algorithm."
@@ -553,22 +796,22 @@ class AlgorithmInputView(tk.Frame):
                     result = dfs(adj)
                 elif algo == "Breadth-First Search (BFS)":
                     result = bfs(adj)
-                elif algo == "Dijkstra’s Algorithm":
+                elif algo == "Algorithme de Dijkstra":
                     start = int(self.extra_inputs['start'].get()) if 'start' in self.extra_inputs else 0
                     result = dijkstra(adj, start)
-                elif algo == "Bellman-Ford Algorithm":
+                elif algo == "Algorithme de Bellman-Ford":
                     start = int(self.extra_inputs['start'].get()) if 'start' in self.extra_inputs else 0
                     result = bellman_ford(adj, start)
-                elif algo == "Bellman’s Algorithm":
+                elif algo == "Algorithme de Bellman":
                     start = int(self.extra_inputs['start'].get()) if 'start' in self.extra_inputs else 0
                     result = bellmans_algorithm(adj, start)
-                elif algo == "Prim’s Algorithm":
+                elif algo == "Algorithme de Prim":
                     result = prim(adj)
-                elif algo == "Kruskal’s Algorithm":
+                elif algo == "Algorithme de Kruskal":
                     result = kruskal(adj)
-                elif algo == "Graph Coloring":
+                elif algo == "Coloration de Graphes":
                     result = graph_coloring(adj)
-                elif algo == "Ford-Fulkerson Algorithm":
+                elif algo == "Algorithme de Ford-Fulkerson":
                     source = int(self.extra_inputs['source'].get()) if 'source' in self.extra_inputs else 0
                     sink = int(self.extra_inputs['sink'].get()) if 'sink' in self.extra_inputs else len(adj)-1
                     result = ford_fulkerson(adj, source, sink)
@@ -580,7 +823,7 @@ class AlgorithmInputView(tk.Frame):
             result = f"Error: {e}"
 
         self.result_label.config(
-            text=f"Result for '{self.algorithm_name}':\n\n{result}"
+            text=result
         )
 
 if __name__ == "__main__":
