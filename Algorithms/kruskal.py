@@ -24,7 +24,7 @@ def kruskal(adj):
     for w, u, v in edges:
         ru, rv = find(u), find(v)
         if ru != rv:
-            mst.append((u, v))
+            mst.append((u, v, adj[u][v]))
             total += w
             parent[ru] = rv
 
