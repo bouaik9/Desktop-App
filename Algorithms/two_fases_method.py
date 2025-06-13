@@ -67,13 +67,13 @@ def two_phase_method(matrix):
             if tableau[i, col] > 1e-8:
                 ratios.append((tableau[i, -1] / tableau[i, col], i))
         if not ratios:
-            return "Infeasible problem."
+            return "Problème infaisable."
         _, row = min(ratios)
         pivot(tableau, row, col)
         basis[row] = col
 
     if abs(tableau[-1, -1]) > 1e-8:
-        return "Infeasible problem (artificial variables remain)."
+        return "Problème infaisable (des variables artificielles subsistent)."
 
     # Remove artificial variables, proceed to phase 2
     keep_cols = [j for j in range(A1.shape[1]) if j not in art_vars]
@@ -104,7 +104,7 @@ def two_phase_method(matrix):
             if tableau2[i, col] > 1e-8:
                 ratios.append((tableau2[i, -1] / tableau2[i, col], i))
         if not ratios:
-            return "Unbounded solution."
+            return "Solution non bornée."
         _, row = min(ratios)
         pivot(tableau2, row, col)
         basis[row] = col

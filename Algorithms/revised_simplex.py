@@ -40,7 +40,7 @@ def revised_simplex_method(matrix):
         try:
             y = np.linalg.solve(B.T, cB)
         except np.linalg.LinAlgError:
-            return "Numerical issue: singular basis."
+            return "Problème numérique : base singulière."
         reduced_costs = []
         for j in N:
             aj = A[:, j]
@@ -56,7 +56,7 @@ def revised_simplex_method(matrix):
         _, j = max(reduced_costs, key=lambda x: x[0])
         d = np.linalg.solve(B, A[:, j])
         if all(d <= 1e-8):
-            return "Unbounded solution."
+            return "Solution non bornée."
         ratios = [(xB[i] / d[i], i) for i in range(len(d)) if d[i] > 1e-8]
         theta, leaving_idx = min(ratios)
         basis[leaving_idx] = j

@@ -52,7 +52,7 @@ def simplex_algorithm(matrix):
             if tableau[i, col] > 1e-8:
                 ratios.append((tableau[i, -1] / tableau[i, col], i))
         if not ratios:
-            return "Unbounded solution."
+            return "Solution non bornée."
         _, row = min(ratios)
         pivot(tableau, row, col)
         basis[row] = col
