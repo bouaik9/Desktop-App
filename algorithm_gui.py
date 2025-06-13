@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, font
+from tkinter import filedialog
 import threading
 from collections import deque
 import numpy as np
@@ -258,6 +259,25 @@ class AlgorithmInputView(tk.Frame):
                                   bg=ENTRY_BG, fg=ENTRY_FG, insertbackground=FG_COLOR, bd=1, relief="solid")
         self.input_text.pack(padx=32, pady=8)
 
+        # Import button
+        import_frame = tk.Frame(self, bg=BG_COLOR)
+        import_frame.pack(anchor="w", padx=32)
+
+        import_btn = tk.Button(
+            import_frame,
+            text="Import File",
+            font=("Segoe UI", 11),
+            bg=BUTTON_BG,
+            fg=BUTTON_FG,
+            activebackground=ACCENT_COLOR,
+            activeforeground=FG_COLOR,
+            relief="flat",
+            padx=10,
+            pady=4,
+            command=self.import_file
+        )
+        import_btn.pack(pady=4)
+
         # Additional fields for certain algorithms
         algo = self.algorithm_name
         if algo in ["Algorithme de Dijkstra", "Algorithme de Bellman-Ford", "Algorithme de Bellman"]:
@@ -416,3 +436,20 @@ class AlgorithmInputView(tk.Frame):
         self.result_label.config(
             text=result
         )
+
+    def import_file(self):
+        """Import matrix data from a text file."""
+        file_path = filedialog.askopenfilename(
+            title="Select Input File",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        
+        if file_path:
+            try:
+                with open(file_path, 'r') as file:
+                    content = file.read()
+                    # Clear current content and insert new content
+                    self.input_text.delete('1.0', tk.END)
+                    self.input_text.insert('1.0', content)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to read file: {str(e)}")
