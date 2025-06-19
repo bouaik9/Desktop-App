@@ -1,15 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, font
+from tkinter import messagebox, font
 from tkinter import filedialog
-import threading
-from collections import deque
-import numpy as np
-from utilities.graph_coloring_draw import graph_coloring_draw
-from utilities.graph_from_matrix import draw_graph_from_matrix
 from Algorithms import *
-
-import threading
 import webbrowser
+import asyncio
+import threading
+from utilities.graph_from_matrix import draw_graph_from_matrix
 
 # Algorithm metadata
 ALGORITHMS = {
@@ -118,10 +114,6 @@ def parse_graph_edges(text):
 
 
 
-
-def bellmans_algorithm(adj, start=0):
-    # Alias for Bellman-Ford
-    return bellman_ford(adj, start)
 
 
 class App(tk.Tk):
@@ -348,15 +340,32 @@ class AlgorithmInputView(tk.Frame):
             relief="flat", padx=10, pady=6,
             command=lambda: controller.show_algorithm_selection_view(self.domain)
         )
-        back_btn.grid(row=0, column=2, padx=8)
+        back_btn.grid(row=0, column=3, padx=8)
 
         # Result label
         self.result_label = tk.Label(self, text="", font=("Segoe UI", 12, "italic"),
                                     bg=BG_COLOR, fg=ACCENT_COLOR, wraplength=400, pady=10)
         self.result_label.pack()
 
+        # After creating the Submit button:
+        if algo in ["Algorithme de Kruskal", "Algorithme de Prim"]:
+            voir_btn = tk.Button(
+            btn_frame,
+            text="Voir le graph",
+            font=("Segoe UI", 11),
+            bg=BUTTON_BG,
+            fg=BUTTON_FG,
+            activebackground=ACCENT_COLOR,
+            activeforeground=FG_COLOR,
+            relief="flat",
+            padx=10,
+            pady=4,
+            command=self.async_voir_le_graph
+            )
+            # Place the button next to the Submit button
+            voir_btn.grid(row=0, column=2, padx=8)
+
     def show_documentation(self):
-        # Mapping of algorithms to documentation URLs
         doc_links = {
             "LP: Méthode du Simplex Révisée": "https://pageperso.lis-lab.fr/christophe.gonzales/teaching/optimisation/cours/cours04.pdf",
             "LP: Algorithme de Simplex": "https://youtu.be/i8vnEZi3e4A?si=tCHFjZVCbnGGtb1l",
@@ -453,3 +462,19 @@ class AlgorithmInputView(tk.Frame):
                     self.input_text.insert('1.0', content)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to read file: {str(e)}")
+
+    def async_voir_le_graph(self):
+        # Get adjacency matrix from input
+        text = self.input_text.get("1.0", "end").strip()
+        adj = self.parse_matrix(text)
+        # Run in a separate thread to avoid blocking the GUI
+        threading.Thread(target=draw_graph_from_matrix, args=(adj,), kwargs={"path_color": "white"}).start()
+
+    def parse_matrix(self, text):
+        # Converts input text to adjacency matrix (list of lists)
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        matrix = []
+        for line in lines:
+            row = [float(x) for x in line.replace(',', ' ').split()]
+            matrix.append(row)
+        return matrix

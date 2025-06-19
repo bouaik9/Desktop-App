@@ -1,4 +1,4 @@
-from algorithm_gui import App
+from gui import App
 
 
 if __name__ == "__main__":

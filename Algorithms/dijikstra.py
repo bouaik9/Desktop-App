@@ -1,5 +1,6 @@
+import heapq
+
 def dijkstra(adj, start=0):
-    import heapq
     n = len(adj)
     dist = [float('inf')] * n
     dist[start] = 0

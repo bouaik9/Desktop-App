@@ -14,3 +14,11 @@ def bellman_ford(graph, start):
                 raise ValueError("Graph contains a negative-weight cycle")
 
     return distance
+
+bellmans_algorithm = bellman_ford
+
+
+
+
+
+

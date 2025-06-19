@@ -1,5 +1,7 @@
+from collections import deque
+
+
 def bfs(adj, start=0):
-    from collections import deque
     visited = [start]
     queue = deque([start])
     while queue:

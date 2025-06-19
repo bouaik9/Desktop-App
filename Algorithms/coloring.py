@@ -1,8 +1,4 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, font
 import threading
-from collections import deque
-import numpy as np
 
 from utilities.graph_coloring_draw import graph_coloring_draw
 def graph_coloring(adj):
@@ -31,3 +27,5 @@ def graph_coloring(adj):
     threading.Thread(target=draw, daemon=True).start()
 
     return f"Nombre de couleurs utilisées : {max(result)+1}"
+
+

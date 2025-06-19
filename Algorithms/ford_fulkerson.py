@@ -1,8 +1,4 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, font
-import threading
 from collections import deque
-import numpy as np
 def ford_fulkerson(adj, source=0, sink=None):
     
     n = len(adj)

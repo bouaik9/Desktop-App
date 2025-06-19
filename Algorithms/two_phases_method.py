@@ -111,15 +111,7 @@ class TwoPhaseSimplex:
         return round(value, 4)
 
 def two_phase_method(matrix):
-    """
-    Wrapper function for backward compatibility.
-    
-    Args:
-        matrix: Input matrix in standard form
-        
-    Returns:
-        dict: Solution dictionary
-    """
+
     solver = TwoPhaseSimplex()
     return solver.solve(matrix)
 

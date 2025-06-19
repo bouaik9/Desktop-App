@@ -1,10 +1,6 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, font
-import threading
-from collections import deque
-import numpy as np
 
 from utilities.graph_from_matrix import draw_graph_from_matrix
+import threading
 def prim(adj):
     n = len(adj)
     selected = [False] * n
@@ -26,6 +22,7 @@ def prim(adj):
             selected[v] = True
 
     # Launch visualization in background
-    draw_graph_from_matrix(adj, edges, path_color="red")
+    viz_thread = threading.Thread(target=draw_graph_from_matrix, args=(adj, edges), kwargs={"path_color": "red"})
+    viz_thread.start()
 
-    return f"Prim MST edges: {edges}\nTotal weight: {total}"
+    return f"Arêtes de l'arbre : {edges}\nPoids total : {total}"
