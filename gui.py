@@ -7,7 +7,6 @@ import asyncio
 import threading
 from utilities.graph_from_matrix import draw_graph_from_matrix
 
-# Algorithm metadata
 ALGORITHMS = {
     "Programmation Linéaire": {
         "LP: Méthode du Simplex Révisée": {

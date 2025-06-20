@@ -1,4 +1,11 @@
-def bellman_ford(graph, start):
+def bellman_ford(matrix, start):
+    graph = {}
+    
+    for i in range(len(matrix)):
+        graph[i] = {}
+        for j in range(len(matrix[i])):
+            if matrix[i][j] != 0:
+                graph[i][j] = matrix[i][j]
     distance = {vertex: float('inf') for vertex in graph}
     distance[start] = 0
 
